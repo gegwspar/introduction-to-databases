@@ -299,10 +299,10 @@ N:N  → muitos para muitos
 
 | Relacionamento | Cardinalidade prevista | Justificativa |
 |---|---|---|
-| Analista — Incidentes | 1 | Um analista pode acompanhar vários incidentes |
-| Dispositivo — Incidentes | 1 | Um dispositivo pode estar relacionado a vários incidentes |
-| Dispositivo — Alertas | 1 | Um dispositivo pode gerar vários alertas |
-| Tipo de Ameaça — Incidentes | 1 | Um tipo de ameaça pode classificar vários incidentes |
+| Analista — Incidentes | 1:N | Um analista pode acompanhar vários incidentes |
+| Dispositivo — Incidentes | 1:N | Um dispositivo pode estar relacionado a vários incidentes |
+| Dispositivo — Alertas | 1:N | Um dispositivo pode gerar vários alertas |
+| Tipo de Ameaça — Incidentes | 1:N | Um tipo de ameaça pode classificar vários incidentes |
 
 ---
 
