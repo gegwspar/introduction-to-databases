@@ -39,8 +39,8 @@ Nesta Sprint 1/5, o foco é exclusivamente o **planejamento do banco de dados**.
 
 **Nome escolhido para o banco de dados:**
 
-```gerenciamento_incidentes
-
+```
+gerenciamento_incidentes
 ```
 
 ---
@@ -169,8 +169,8 @@ Para cada entidade, identifique os principais atributos que deverão ser armazen
 
 **Nome da entidade:**
 
-```Incidentes
-
+```
+Incidentes
 ```
 
 | Atributo | Informação armazenada | Tipo de dado previsto | Obrigatório? |
@@ -185,8 +185,8 @@ Para cada entidade, identifique os principais atributos que deverão ser armazen
 
 **Nome da entidade:**
 
-```Analistas
-
+```
+Analistas
 ```
 
 | Atributo | Informação armazenada | Tipo de dado previsto | Obrigatório? |
@@ -201,8 +201,8 @@ Para cada entidade, identifique os principais atributos que deverão ser armazen
 
 **Nome da entidade:**
 
-```Dispositivos
-
+```
+Dispositivos
 ```
 
 | Atributo | Informação armazenada | Tipo de dado previsto | Obrigatório? |
@@ -217,8 +217,8 @@ Para cada entidade, identifique os principais atributos que deverão ser armazen
 
 **Nome da entidade:**
 
-```Alertas
-
+```
+Alertas
 ```
 
 | Atributo | Informação armazenada | Tipo de dado previsto | Obrigatório? |
