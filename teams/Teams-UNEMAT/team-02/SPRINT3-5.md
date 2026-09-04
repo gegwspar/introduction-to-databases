@@ -175,11 +175,12 @@ Ordem recomendada:
 
 | Tabela | Quantidade prevista | Depende de outra tabela? |
 |---|---:|---|
-|  |  |  |
-|  |  |  |
-|  |  |  |
-|  |  |  |
-|  |  |  |
+| analistas | 5 | Não |
+| dispositivos | 5 | Não |
+| tipos_ameacas| 5 | Não |
+| alertas| 5 | Sim (dispositivos) |
+| incidentes | 5 | Sim (analistas, dispositivos, tipos_ameacas, alertas) |
+| acoes_resposta | 6 | Sim (incidentes) |  
 
 ---
 
@@ -190,11 +191,17 @@ Ordem recomendada:
 **Nome:**
 
 ```text
-
+analistas
 ```
 
 ```sql
--- Cole aqui os INSERTs realizados.
+-- INSERT INTO analistas (nome, email, cargo)
+   VALUES
+    ('Mariana Alves',   'mariana.alves@empresa.com',   'Analista de Segurança Pleno'),
+    ('Pedro Santos',    'pedro.santos@empresa.com',    'Analista de Segurança Júnior'),
+    ('Juliana Costa',   'juliana.costa@empresa.com',   'Analista de Segurança Sênior'),
+    ('Rafael Oliveira', 'rafael.oliveira@empresa.com', 'Coordenador de SOC'),
+    ('Beatriz Lima',    'beatriz.lima@empresa.com',    'Analista de Segurança Pleno');
 
 ```
 
@@ -203,11 +210,17 @@ Ordem recomendada:
 **Nome:**
 
 ```text
-
+dispositivos
 ```
 
 ```sql
--- Cole aqui os INSERTs realizados.
+-- INSERT INTO dispositivos (nome_dispositivo, tipo_dispositivo, ip_address, ativo)
+   VALUES
+    ('Servidor-Web-01',        'Servidor',  '192.168.1.10', TRUE),
+    ('Notebook-Financeiro-03', 'Notebook',  '192.168.1.55', TRUE),
+    ('Firewall-Principal',     'Firewall',  '10.0.0.1',     TRUE),
+    ('Switch-Core-01',         'Switch',    '10.0.0.2',     TRUE),
+    ('Servidor-BD-02',         'Servidor',  '192.168.1.20', FALSE);
 
 ```
 
@@ -216,11 +229,17 @@ Ordem recomendada:
 **Nome:**
 
 ```text
-
+tipos_ameacas
 ```
 
 ```sql
--- Cole aqui os INSERTs realizados.
+-- INSERT INTO tipos_ameacas (nome_ameaca, descricao)
+   VALUES
+    ('Phishing',                    'Tentativa de obter dados sensíveis se passando por uma fonte confiável.'),
+    ('Ransomware',                  'Software malicioso que sequestra e criptografa arquivos, exigindo resgate.'),
+    ('Malware',                     'Software desenvolvido para causar danos ou obter acesso não autorizado.'),
+    ('Ataque de Força Bruta',       'Tentativas repetidas de adivinhar credenciais de acesso.'),
+    ('Negação de Serviço (DDoS)',   'Sobrecarga de um serviço ou rede para torná-lo indisponível.');
 
 ```
 
@@ -229,11 +248,57 @@ Ordem recomendada:
 **Nome:**
 
 ```text
-
+alertas
 ```
 
 ```sql
--- Cole aqui os INSERTs realizados.
+-- INSERT INTO alertas (titulo, descricao, id_dispositivo, status)
+   VALUES
+    ('Tentativa de login suspeita',           '...', 1, 'ABERTO'),
+    ('Tráfego anômalo detectado',              '...', 3, 'ABERTO'),
+    ('Uso elevado de CPU',                     '...', 5, 'EM_ANALISE'),
+    ('Múltiplas tentativas de acesso negadas', '...', 4, 'ABERTO'),
+    ('Arquivo suspeito identificado',          '...', 2, 'RESOLVIDO');
+
+```
+## Tabela 5
+
+**Nome:**
+
+```text
+incidentes
+```
+
+```sql
+--  INSERT INTO incidentes (
+    titulo, descricao, severidade, status,
+    id_analista, id_dispositivo, id_ameaca, id_alerta)
+    VALUES
+    ('Acesso não autorizado ao servidor web', '...', 'ALTA', 'ABERTO', 1, 1, 4, 1),
+    ('Infecção por ransomware em notebook financeiro', '...', 'CRITICA', 'EM_ANALISE', 3, 2, 2, 5),
+    ('Tentativa de phishing direcionado', '...', 'MEDIA', 'ABERTO', 2, NULL, 1, NULL),
+    ('Ataque de negação de serviço ao firewall', '...', 'ALTA', 'EM_ANALISE', 4, 3, 5, 2),
+    ('Comportamento anômalo no servidor de banco de dados', '...', 'BAIXA', 'ENCERRADO', 5, 5, 3, 3);
+
+```
+
+## Tabela 6
+
+**Nome:**
+
+```text
+acoes_resposta
+```
+
+```sql
+-- INSERT INTO acoes_resposta (descricao, id_incidente)
+    VALUES
+    ('Bloqueio temporário do IP de origem do ataque.', 1),
+    ('Redefinição de senha do usuário afetado.', 1),
+    ('Isolamento do notebook da rede corporativa.', 2),
+    ('Execução de verificação antivírus completa.', 2),
+    ('Ativação de regras de mitigação de DDoS no firewall.', 4),
+    ('Verificação de logs e encerramento do incidente.', 5);
 
 ```
 
@@ -327,9 +392,9 @@ Registre os resultados:
 
 | Restrição testada | O que foi testado? | Resultado |
 |---|---|---|
-|  |  |  |
-|  |  |  |
-|  |  |  |
+| UNIQUE (email) | Tentativa de cadastrar um novo analista com o e-mail mariana.alves@empresa.com, já existente | O MySQL recusou o comando com o erro "Duplicate entry ... for key 'email' |
+| NOT NULL (titulo) | Tentativa de inserir um incidente sem informar o campo titulo | O MySQL recusou o comando com o erro "Field 'titulo' doesn't have a default value" |
+| FOREIGN KEY (id_analista) | Tentativa de inserir um incidente com id_analista = 999, que não existe na tabela analistas | O MySQL recusou o comando com o erro "Cannot add or update a child row: a foreign key constraint fails" |
 
 > Não mantenha comandos propositalmente inválidos no `SPRINT3-5.sql` final.
 
@@ -391,35 +456,42 @@ Execute pelo menos:
 ## UPDATE 1
 
 ```sql
--- Cole aqui.
+-- UPDATE dispositivos
+SET ativo = TRUE
+WHERE id_dispositivo = 5;
 
 ```
 
 **O que foi alterado?**
 
-> Escreva aqui.
+> O Servidor-BD-02, que estava cadastrado como inativo (ativo = FALSE), foi reativado após a conclusão de uma manutenção preventiva.
 
 ## UPDATE 2
 
 ```sql
--- Cole aqui.
+-- UPDATE incidentes
+SET status = 'RESOLVIDO',
+    data_encerramento = CURRENT_TIMESTAMP
+WHERE id_incidente = 1;
 
 ```
 
 **O que foi alterado?**
 
-> Escreva aqui.
+> O incidente 1 (acesso não autorizado ao servidor web) teve seu status alterado de ABERTO para RESOLVIDO, e a data de encerramento foi preenchida automaticamente, refletindo a conclusão das ações de resposta já registradas para esse incidente.
 
 ## UPDATE 3
 
 ```sql
--- Cole aqui.
+-- UPDATE analistas
+SET cargo = 'Analista de Segurança Sênior'
+WHERE id_analista = 2;.
 
 ```
 
 **O que foi alterado?**
 
-> Escreva aqui.
+> O cargo do analista Pedro Santos foi atualizado de "Analista de Segurança Júnior" para "Analista de Segurança Sênior", em razão de uma promoção.
 
 ---
 
@@ -498,24 +570,25 @@ Execute pelo menos:
 ## DELETE 1
 
 ```sql
--- Cole aqui.
+-- DELETE FROM alertas
+   WHERE id_alerta = 4;
 
 ```
 
 **Registro removido:**
 
-> Escreva aqui.
+> O alerta "Múltiplas tentativas de acesso negadas" (id_alerta = 4) foi removido por ter sido identificado como um falso positivo do monitoramento do switch. Esse alerta não estava referenciado por nenhum incidente, então a exclusão foi realizada sem conflito de FOREIGN KEY.
 
 ## DELETE 2
 
 ```sql
--- Cole aqui.
-
+-- DELETE FROM acoes_resposta
+   WHERE id_acao = 6;
 ```
 
 **Registro removido:**
 
-> Escreva aqui.
+> A ação de resposta "Verificação de logs e encerramento do incidente" (id_acao = 6), vinculada ao incidente 5, foi removida por ter sido registrada em duplicidade durante a digitação inicial. Como acoes_resposta é a tabela do lado "filho" da relação com incidentes, a exclusão não afeta nenhuma outra tabela.
 
 ---
 
@@ -722,11 +795,12 @@ SPRINT3-5.sql
 
 | Tabela | Quantidade aproximada de registros ao final |
 |---|---:|
-|  |  |
-|  |  |
-|  |  |
-|  |  |
-|  |  |
+| analistas | 5 |
+| dispositivos | 5|
+| tipos_ameacas | 5 |
+| alertas | 4 (5 inseridos, 1 excluído) |
+| incidentes | 5 |
+| acoes_resposta | 5 (6 inseridos, 1 excluído) |
 
 ---
 
@@ -737,7 +811,7 @@ SPRINT3-5.sql
 Quantidade aproximada de registros inseridos:
 
 ```text
-
+30 registros no total (5 + 5 + 5 + 5 + 5 + 6, entre as 6 tabelas)
 ```
 
 ## UPDATE
@@ -745,7 +819,7 @@ Quantidade aproximada de registros inseridos:
 Quantidade de operações:
 
 ```text
-
+3
 ```
 
 ## DELETE
@@ -753,7 +827,7 @@ Quantidade de operações:
 Quantidade de operações:
 
 ```text
-
+2
 ```
 
 ---
@@ -762,9 +836,9 @@ Quantidade de operações:
 
 | Problema | Possível causa | Solução aplicada |
 |---|---|---|
-|  |  |  |
-|  |  |  |
-|  |  |  |
+|Duplicate entry ao testar UNIQUE  | E-mail repetido inserido de propósito para teste | Comando removido do script final; restrição confirmada como funcional |
+| Cannot add or update a child row | id_analista inexistente inserido de propósito para teste | Comando removido do script final; FK confirmada como funcional |
+| Column 'titulo' cannot be null | Tentativa de inserir incidente sem título, de propósito, para teste | Comando removido do script final; restrição NOT NULL confirmada como funcional |
 
 Mensagens que podem aparecer:
 
@@ -797,22 +871,22 @@ Não exclua arquivos das etapas anteriores.
 
 # 27. Checklist da Sprint 3/5
 
-- [ ] utilizei o banco criado na Sprint 2/5;
-- [ ] utilizei `USE`;
-- [ ] inseri dados coerentes com o projeto;
-- [ ] respeitei a ordem das tabelas;
-- [ ] procurei inserir pelo menos 5 registros nas tabelas principais;
-- [ ] testei restrições de integridade;
-- [ ] executei pelo menos 3 `UPDATE`;
-- [ ] os `UPDATE` possuem condição adequada;
-- [ ] executei pelo menos 2 `DELETE`;
-- [ ] os `DELETE` possuem condição adequada;
-- [ ] verifiquei dependências de `FOREIGN KEY`;
-- [ ] utilizei `SELECT` para conferência;
-- [ ] registrei os problemas encontrados;
-- [ ] salvei o código como `SPRINT3-5.sql`;
-- [ ] preenchi completamente o `SPRINT3-5.md`;
-- [ ] revisei os arquivos antes do commit.
+- [x] utilizei o banco criado na Sprint 2/5;
+- [x] utilizei `USE`;
+- [x] inseri dados coerentes com o projeto;
+- [x] respeitei a ordem das tabelas;
+- [x] procurei inserir pelo menos 5 registros nas tabelas principais;
+- [x] testei restrições de integridade;
+- [x] executei pelo menos 3 `UPDATE`;
+- [x] os `UPDATE` possuem condição adequada;
+- [x] executei pelo menos 2 `DELETE`;
+- [x] os `DELETE` possuem condição adequada;
+- [x] verifiquei dependências de `FOREIGN KEY`;
+- [x] utilizei `SELECT` para conferência;
+- [x] registrei os problemas encontrados;
+- [x] salvei o código como `SPRINT3-5.sql`;
+- [x] preenchi completamente o `SPRINT3-5.md`;
+- [x] revisei os arquivos antes do commit.
 
 ---
 
