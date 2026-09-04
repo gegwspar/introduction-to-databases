@@ -39,7 +39,8 @@ Nesta Sprint 1/5, o foco é exclusivamente o **planejamento do banco de dados**.
 
 **Nome escolhido para o banco de dados:**
 
-```
+```text
+
 gerenciamento_incidentes
 
 ```
@@ -170,7 +171,7 @@ Para cada entidade, identifique os principais atributos que deverão ser armazen
 
 **Nome da entidade:**
 
-```
+```text
 Incidentes
 ```
 
@@ -186,13 +187,13 @@ Incidentes
 
 **Nome da entidade:**
 
-```
+```text
 Analistas
 ```
 
 | Atributo | Informação armazenada | Tipo de dado previsto | Obrigatório? |
 |---|---|---|---|
-| id_analista | Identificador único do analista | INT(100)  | SIM |
+| id_analista | Identificador único do analista | INT  | SIM |
 | nome | Nome do analista | VARCHAR(100) | SIM |
 | email | E-mail do analista  | VARCHAR(150) | SIM |
 | cargo | Cargo ou função do analista | VARCHAR(100) | NÃO |
@@ -202,14 +203,14 @@ Analistas
 
 **Nome da entidade:**
 
-```
+```text
 Dispositivos
 ```
 
 | Atributo | Informação armazenada | Tipo de dado previsto | Obrigatório? |
 |---|---|---|---|
 | id_dispositivo  | Identificador único do dispositivo  | INT | Sim |
-| nome_dispositivo |Nome do dispositivo  | VARCHAR(100) Sim  |
+| nome_dispositivo |Nome do dispositivo  | VARCHAR(100) | Sim  |
 | tipo_dispositivo |Tipo do equipamento  | VARCHAR(50)  |Sim  |
 | ip_adress |Endereço IP do dispositivo  | VARCHAR(45) | Sim |
 | ativo | Indica se o dispositivo está ativo | BOOLEAN | Sim |
@@ -218,7 +219,7 @@ Dispositivos
 
 **Nome da entidade:**
 
-```
+```text
 Alertas
 ```
 
