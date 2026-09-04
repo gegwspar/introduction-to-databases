@@ -39,7 +39,7 @@ Nesta Sprint 1/5, o foco é exclusivamente o **planejamento do banco de dados**.
 
 **Nome escolhido para o banco de dados:**
 
-```
+```text
 gerenciamento_incidentes
 ```
 
