@@ -40,7 +40,6 @@ Nesta Sprint 1/5, o foco é exclusivamente o **planejamento do banco de dados**.
 **Nome escolhido para o banco de dados:**
 
 ```text
-
 gerenciamento_incidentes
 
 ```
@@ -171,8 +170,8 @@ Para cada entidade, identifique os principais atributos que deverão ser armazen
 
 **Nome da entidade:**
 
-```text
-Incidentes
+```Incidentes
+
 ```
 
 | Atributo | Informação armazenada | Tipo de dado previsto | Obrigatório? |
@@ -187,8 +186,8 @@ Incidentes
 
 **Nome da entidade:**
 
-```text
-Analistas
+```Analistas
+
 ```
 
 | Atributo | Informação armazenada | Tipo de dado previsto | Obrigatório? |
@@ -203,8 +202,8 @@ Analistas
 
 **Nome da entidade:**
 
-```text
-Dispositivos
+```Dispositivos
+
 ```
 
 | Atributo | Informação armazenada | Tipo de dado previsto | Obrigatório? |
@@ -219,8 +218,8 @@ Dispositivos
 
 **Nome da entidade:**
 
-```text
-Alertas
+```Alertas
+
 ```
 
 | Atributo | Informação armazenada | Tipo de dado previsto | Obrigatório? |
@@ -301,10 +300,10 @@ N:N  → muitos para muitos
 
 | Relacionamento | Cardinalidade prevista | Justificativa |
 |---|---|---|
-| Analista — Incidentes | 1:N  | Um analista pode acompanhar vários incidentes |
-| Dispositivo — Incidentes | 1:N  | Um dispositivo pode estar relacionado a vários incidentes |
-| Dispositivo — Alertas | 1:N  | Um dispositivo pode gerar vários alertas |
-| Tipo de Ameaça — Incidentes | 1:N  | Um tipo de ameaça pode classificar vários incidentes |
+| Analista — Incidentes | 1 | Um analista pode acompanhar vários incidentes |
+| Dispositivo — Incidentes | 1 | Um dispositivo pode estar relacionado a vários incidentes |
+| Dispositivo — Alertas | 1 | Um dispositivo pode gerar vários alertas |
+| Tipo de Ameaça — Incidentes | 1 | Um tipo de ameaça pode classificar vários incidentes |
 
 ---
 
