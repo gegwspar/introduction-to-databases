@@ -36,12 +36,12 @@ O aluno deverá continuar utilizando o mesmo banco do `Module-1`.
 
 **Nome completo:**
 
-> Escreva aqui.
+> Geovanna Gaspar Ribeiro
 
 **Banco utilizado:**
 
 ```text
-
+gerenciamento_incidentes
 ```
 
 ---
@@ -72,11 +72,11 @@ Neste exemplo:
 
 Defina pelo menos cinco perguntas do seu domínio que possam ser resolvidas com subconsultas.
 
-1. 
-2. 
-3. 
-4. 
-5. 
+1. Quais dispositivos têm mais alertas registrados do que a média de alertas por dispositivo?
+2. Quais analistas já têm pelo menos um incidente atribuído?
+3. Quais dispositivos nunca tiveram nenhum incidente registrado?
+4. Quais tipos de ameaça possuem pelo menos um incidente vinculado?
+5. Qual foi o incidente com a data de identificação mais antiga registrada no sistema?
 
 ---
 
@@ -86,20 +86,30 @@ Crie uma consulta utilizando uma comparação com resultado agregado.
 
 **Pergunta:**
 
-> Escreva aqui.
+> Quais dispositivos têm mais alertas registrados do que a média de alertas por dispositivo?
 
 ```sql
--- Cole aqui.
+SELECT d.nome_dispositivo,
+       COUNT(al.id_alerta) AS total_alertas
+FROM dispositivos d
+JOIN alertas al ON al.id_dispositivo = d.id_dispositivo
+GROUP BY d.id_dispositivo, d.nome_dispositivo
+HAVING COUNT(al.id_alerta) > (
+    SELECT AVG(qtd)
+    FROM (
+        SELECT COUNT(*) AS qtd
+        FROM alertas
+        GROUP BY id_dispositivo
+    ) AS media_por_dispositivo
+);
 ```
 
 **Explique primeiro a consulta interna:**
 
-> Escreva aqui.
-
+> A subconsulta mais interna (SELECT COUNT(*) AS qtd FROM alertas GROUP BY id_dispositivo) conta quantos alertas cada dispositivo tem. A subconsulta em volta dela (SELECT AVG(qtd) FROM (...) AS media_por_dispositivo) calcula a média dessas contagens ou seja, a média de alertas por dispositivo, considerando só os dispositivos que têm ao menos um alerta.
 **Depois explique a consulta externa:**
 
-> Escreva aqui.
-
+> A consulta externa junta dispositivos com alertas, agrupa por dispositivo e conta os alertas de cada um (COUNT(al.id_alerta)). O HAVING compara essa contagem por grupo com o valor único retornado pela subconsulta (a média geral), mantendo no resultado apenas os dispositivos cujo total de alertas seja maior que a média.
 ---
 
 # 5. Subconsulta com IN
@@ -119,15 +129,21 @@ WHERE id_cliente IN (
 
 **Pergunta:**
 
-> Escreva aqui.
+> Quais analistas já têm pelo menos um incidente atribuído?
 
 ```sql
--- Cole aqui.
+SELECT nome
+FROM analistas
+WHERE id_analista IN (
+    SELECT id_analista
+    FROM incidentes
+    WHERE id_analista IS NOT NULL
+);
 ```
 
 **Explique:**
 
-> Escreva aqui.
+> A subconsulta retorna a lista de todos os id_analista que aparecem na tabela incidentes (ignorando incidentes sem analista atribuído). A consulta externa então seleciona, em analistas, apenas os nomes cujo id_analista está presente nessa lista.
 
 ---
 
@@ -135,15 +151,21 @@ WHERE id_cliente IN (
 
 **Pergunta:**
 
-> Escreva aqui.
+> Quais dispositivos nunca tiveram nenhum incidente registrado?
 
 ```sql
--- Cole aqui.
+SELECT nome_dispositivo
+FROM dispositivos
+WHERE id_dispositivo NOT IN (
+    SELECT id_dispositivo
+    FROM incidentes
+    WHERE id_dispositivo IS NOT NULL
+);
 ```
 
 **Que registros você está procurando?**
 
-> Escreva aqui.
+> Dispositivos cujo id_dispositivo não aparece em nenhuma linha da tabela incidentes — ou seja, dispositivos que, até o momento, nunca sofreram nenhum incidente registrado. (O filtro WHERE id_dispositivo IS NOT NULL na subconsulta é importante: se algum incidente tivesse id_dispositivo nulo, o NOT IN poderia deixar de retornar qualquer linha, por causa de como o SQL trata NULL em comparações.)
 
 ---
 
@@ -155,10 +177,16 @@ WHERE id_cliente IN (
 
 **Pergunta:**
 
-> Escreva aqui.
+> Quais tipos de ameaça possuem pelo menos um incidente vinculado?
 
 ```sql
--- Cole aqui.
+SELECT t.nome_ameaca
+FROM tipos_ameacas t
+WHERE EXISTS (
+    SELECT 1
+    FROM incidentes i
+    WHERE i.id_ameaca = t.id_ameaca
+);
 ```
 
 ---
@@ -167,15 +195,21 @@ WHERE id_cliente IN (
 
 **Pergunta:**
 
-> Escreva aqui.
+> Quais alertas ainda não geraram nenhum incidente vinculado a eles?
 
 ```sql
--- Cole aqui.
+SELECT al.titulo
+FROM alertas al
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM incidentes i
+    WHERE i.id_alerta = al.id_alerta
+);
 ```
 
 **Explique a diferença em relação a `EXISTS`:**
 
-> Escreva aqui.
+> EXISTS mantém as linhas em que a subconsulta encontra pelo menos uma correspondência; NOT EXISTS faz o oposto — mantém apenas as linhas em que a subconsulta não encontra nenhuma correspondência. Aqui, isso identifica os alertas que foram registrados mas que ainda não resultaram em nenhum incidente formal.
 
 ---
 
@@ -183,15 +217,20 @@ WHERE id_cliente IN (
 
 **Pergunta:**
 
-> Escreva aqui.
+> Qual foi o incidente com a data de identificação mais antiga registrada no sistema?
 
 ```sql
--- Cole aqui.
+SELECT titulo, data_identificacao
+FROM incidentes
+WHERE data_identificacao = (
+    SELECT MIN(data_identificacao)
+    FROM incidentes
+);
 ```
 
 **Explique:**
 
-> Escreva aqui.
+> A subconsulta calcula o menor valor de data_identificacao em toda a tabela incidentes. A consulta externa então busca a(s) linha(s) cujo data_identificacao seja exatamente igual a esse valor mínimo, retornando o(s) incidente(s) mais antigo(s) com título e data, não apenas a data isolada.
 
 ---
 
@@ -203,15 +242,24 @@ Uma subconsulta correlacionada depende de valores da consulta externa.
 
 **Pergunta:**
 
-> Escreva aqui.
+> Para cada analista, qual foi o incidente mais recente atribuído a ele?
 
 ```sql
--- Cole aqui.
+SELECT a.nome AS analista,
+       i.titulo AS incidente_mais_recente,
+       i.data_identificacao
+FROM analistas a
+JOIN incidentes i ON i.id_analista = a.id_analista
+WHERE i.data_identificacao = (
+    SELECT MAX(i2.data_identificacao)
+    FROM incidentes i2
+    WHERE i2.id_analista = a.id_analista
+);
 ```
 
 **Qual coluna da consulta externa é utilizada pela subconsulta?**
 
-> Escreva aqui.
+> a.id_analista. A subconsulta não é calculada uma única vez para o banco inteiro — ela é executada de novo para cada analista trazido pela consulta externa, filtrando incidentes apenas pelos incidentes daquele analista específico e retornando a maior data entre eles. É esse uso de a.id_analista dentro da subconsulta que caracteriza a correlação.
 
 ---
 
@@ -226,45 +274,62 @@ b) SUBQUERY
 
 ## Pergunta 1
 
-> Escreva aqui.
+> Quais analistas têm pelo menos um incidente atribuído?
 
 ### JOIN
 
 ```sql
--- Cole aqui.
+SELECT DISTINCT a.nome
+FROM analistas a
+JOIN incidentes i ON i.id_analista = a.id_analista;
 ```
 
 ### SUBQUERY
 
 ```sql
--- Cole aqui.
+SELECT nome
+FROM analistas
+WHERE id_analista IN (
+    SELECT id_analista
+    FROM incidentes
+    WHERE id_analista IS NOT NULL
+);
 ```
 
 ### Qual abordagem ficou mais compreensível?
 
-> Escreva aqui e justifique.
+> A versão com SUBQUERY (IN) é mais direta pra essa pergunta específica, porque já retorna cada analista uma única vez naturalmente. A versão com JOIN precisa do DISTINCT para não repetir o nome do analista uma vez para cada incidente que ele tiver sem o DISTINCT, um analista com 3 incidentes apareceria 3 vezes no resultado.
 
 ---
 
 ## Pergunta 2
 
-> Escreva aqui.
+> Quais dispositivos nunca tiveram nenhum alerta registrado?
 
 ### JOIN
 
 ```sql
--- Cole aqui.
+SELECT d.nome_dispositivo
+FROM dispositivos d
+LEFT JOIN alertas al ON al.id_dispositivo = d.id_dispositivo
+WHERE al.id_alerta IS NULL;
 ```
 
 ### SUBQUERY
 
 ```sql
--- Cole aqui.
+SELECT nome_dispositivo
+FROM dispositivos
+WHERE id_dispositivo NOT IN (
+    SELECT id_dispositivo
+    FROM alertas
+    WHERE id_dispositivo IS NOT NULL
+);
 ```
 
 ### Comparação
 
-> Escreva aqui.
+> As duas resolvem o mesmo problema (um "anti-join": achar o que não tem correspondência). A versão com LEFT JOIN + IS NULL é o padrão mais tradicional em SQL para esse tipo de pergunta e costuma ter melhor desempenho em bancos grandes. Já a versão com NOT IN é mais legível para quem está começando, mas exige cuidado: se a subconsulta puder retornar algum valor NULL, o NOT IN deixa de funcionar corretamente por isso o filtro WHERE id_dispositivo IS NOT NULL foi incluído dentro da subconsulta.
 
 ---
 
@@ -290,7 +355,16 @@ O `SPRINT2-5.sql` deverá conter no mínimo:
 Escolha uma subconsulta.
 
 ```sql
--- Cole aqui.
+SELECT a.nome AS analista,
+       i.titulo AS incidente_mais_recente,
+       i.data_identificacao
+FROM analistas a
+JOIN incidentes i ON i.id_analista = a.id_analista
+WHERE i.data_identificacao = (
+    SELECT MAX(i2.data_identificacao)
+    FROM incidentes i2
+    WHERE i2.id_analista = a.id_analista
+);
 ```
 
 Responda:
@@ -299,7 +373,10 @@ Responda:
 2. Qual valor ou conjunto de valores ela retorna?
 3. Como esse resultado é utilizado pela consulta externa?
 
-> Escreva aqui.
+> 
+1. Como essa subconsulta é correlacionada, ela não roda "de uma vez só" antes da consulta externa o MySQL executa a consulta externa linha a linha, e para cada linha (cada combinação analista + incidente) roda a subconsulta interna usando o id_analista daquela linha específica.
+2. Um único valor por execução: a maior data_identificacao entre os incidentes daquele analista específico.
+3. A consulta externa compara a data_identificacao do incidente da linha atual com esse valor máximo; se forem iguais, significa que aquele é o incidente mais recente daquele analista, e a linha é mantida no resultado.
 
 ---
 
@@ -310,16 +387,21 @@ Execute uma consulta e altere temporariamente um valor de filtro.
 **Consulta original:**
 
 ```sql
--- Cole aqui.
+SELECT titulo, data_identificacao
+FROM incidentes
+WHERE data_identificacao = (
+    SELECT MIN(data_identificacao)
+    FROM incidentes
+);
 ```
 
 **Alteração realizada:**
 
-> Escreva aqui.
+> Troquei MIN por MAX na subconsulta, para buscar o incidente mais recente em vez do mais antigo:
 
 **Mudança observada:**
 
-> Escreva aqui.
+> A consulta com MIN retorna o incidente cadastrado há mais tempo, e a com MAX retorna o incidente identificado mais recentemente.
 
 ---
 
@@ -371,20 +453,20 @@ USE nome_do_banco;
 
 # 17. Checklist
 
-- [ ] utilizei o banco do projeto;
-- [ ] criei subconsulta com comparação;
-- [ ] utilizei `IN`;
-- [ ] utilizei `NOT IN`;
-- [ ] utilizei `EXISTS`;
-- [ ] utilizei `NOT EXISTS`;
-- [ ] utilizei `MAX` ou `MIN`;
-- [ ] criei subconsulta correlacionada;
-- [ ] resolvi duas perguntas usando JOIN e SUBQUERY;
-- [ ] expliquei o raciocínio;
-- [ ] testei no MySQL Workbench;
-- [ ] consigo explicar as consultas presencialmente;
-- [ ] salvei `SPRINT2-5.md`;
-- [ ] salvei `SPRINT2-5.sql`.
+- [x] utilizei o banco do projeto;
+- [x] criei subconsulta com comparação;
+- [x] utilizei `IN`;
+- [x] utilizei `NOT IN`;
+- [x] utilizei `EXISTS`;
+- [x] utilizei `NOT EXISTS`;
+- [x] utilizei `MAX` ou `MIN`;
+- [x] criei subconsulta correlacionada;
+- [x] resolvi duas perguntas usando JOIN e SUBQUERY;
+- [x] expliquei o raciocínio;
+- [x] testei no MySQL Workbench;
+- [x] consigo explicar as consultas presencialmente;
+- [x] salvei `SPRINT2-5.md`;
+- [x] salvei `SPRINT2-5.sql`.
 
 ---
 
