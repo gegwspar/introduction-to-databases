@@ -107,6 +107,7 @@ HAVING COUNT(al.id_alerta) > (
 **Explique primeiro a consulta interna:**
 
 > A subconsulta mais interna (SELECT COUNT(*) AS qtd FROM alertas GROUP BY id_dispositivo) conta quantos alertas cada dispositivo tem. A subconsulta em volta dela (SELECT AVG(qtd) FROM (...) AS media_por_dispositivo) calcula a média dessas contagens ou seja, a média de alertas por dispositivo, considerando só os dispositivos que têm ao menos um alerta.
+
 **Depois explique a consulta externa:**
 
 > A consulta externa junta dispositivos com alertas, agrupa por dispositivo e conta os alertas de cada um (COUNT(al.id_alerta)). O HAVING compara essa contagem por grupo com o valor único retornado pela subconsulta (a média geral), mantendo no resultado apenas os dispositivos cujo total de alertas seja maior que a média.
@@ -165,7 +166,7 @@ WHERE id_dispositivo NOT IN (
 
 **Que registros você está procurando?**
 
-> Dispositivos cujo id_dispositivo não aparece em nenhuma linha da tabela incidentes — ou seja, dispositivos que, até o momento, nunca sofreram nenhum incidente registrado. (O filtro WHERE id_dispositivo IS NOT NULL na subconsulta é importante: se algum incidente tivesse id_dispositivo nulo, o NOT IN poderia deixar de retornar qualquer linha, por causa de como o SQL trata NULL em comparações.)
+> Dispositivos cujo id_dispositivo não aparece em nenhuma linha da tabela incidentes ou seja, dispositivos que, até o momento, nunca sofreram nenhum incidente registrado. (O filtro WHERE id_dispositivo IS NOT NULL na subconsulta é importante: se algum incidente tivesse id_dispositivo nulo, o NOT IN poderia deixar de retornar qualquer linha, por causa de como o SQL trata NULL em comparações.)
 
 ---
 
@@ -209,7 +210,7 @@ WHERE NOT EXISTS (
 
 **Explique a diferença em relação a `EXISTS`:**
 
-> EXISTS mantém as linhas em que a subconsulta encontra pelo menos uma correspondência; NOT EXISTS faz o oposto — mantém apenas as linhas em que a subconsulta não encontra nenhuma correspondência. Aqui, isso identifica os alertas que foram registrados mas que ainda não resultaram em nenhum incidente formal.
+> EXISTS mantém as linhas em que a subconsulta encontra pelo menos uma correspondência; NOT EXISTS faz o oposto mantém apenas as linhas em que a subconsulta não encontra nenhuma correspondência. Aqui, isso identifica os alertas que foram registrados mas que ainda não resultaram em nenhum incidente formal.
 
 ---
 
@@ -259,7 +260,7 @@ WHERE i.data_identificacao = (
 
 **Qual coluna da consulta externa é utilizada pela subconsulta?**
 
-> a.id_analista. A subconsulta não é calculada uma única vez para o banco inteiro — ela é executada de novo para cada analista trazido pela consulta externa, filtrando incidentes apenas pelos incidentes daquele analista específico e retornando a maior data entre eles. É esse uso de a.id_analista dentro da subconsulta que caracteriza a correlação.
+> a.id_analista. A subconsulta não é calculada uma única vez para o banco inteiro ela é executada de novo para cada analista trazido pela consulta externa, filtrando incidentes apenas pelos incidentes daquele analista específico e retornando a maior data entre eles. É esse uso de a.id_analista dentro da subconsulta que caracteriza a correlação.
 
 ---
 
@@ -373,10 +374,9 @@ Responda:
 2. Qual valor ou conjunto de valores ela retorna?
 3. Como esse resultado é utilizado pela consulta externa?
 
-> 
-1. Como essa subconsulta é correlacionada, ela não roda "de uma vez só" antes da consulta externa o MySQL executa a consulta externa linha a linha, e para cada linha (cada combinação analista + incidente) roda a subconsulta interna usando o id_analista daquela linha específica.
-2. Um único valor por execução: a maior data_identificacao entre os incidentes daquele analista específico.
-3. A consulta externa compara a data_identificacao do incidente da linha atual com esse valor máximo; se forem iguais, significa que aquele é o incidente mais recente daquele analista, e a linha é mantida no resultado.
+> 1. Como essa subconsulta é correlacionada, ela não roda "de uma vez só" antes da consulta externa o MySQL executa a consulta externa linha a linha, e para cada linha (cada combinação analista + incidente) roda a subconsulta interna usando o id_analista daquela linha específica.
+> 2. Um único valor por execução: a maior data_identificacao entre os incidentes daquele analista específico.
+> 3. A consulta externa compara a data_identificacao do incidente da linha atual com esse valor máximo; se forem iguais, significa que aquele é o incidente mais recente daquele analista, e a linha é mantida no resultado.
 
 ---
 
