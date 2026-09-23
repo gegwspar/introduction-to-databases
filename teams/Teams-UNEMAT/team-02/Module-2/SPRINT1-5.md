@@ -150,7 +150,7 @@ ORDER BY a.nome;
 
 **Explique o resultado:**
 
-> Cada linha do resultado combina um analista com um incidente sob sua responsabilidade. Como é INNER JOIN, analistas que não têm nenhum incidente atribuído não aparecem no resultado — só entram combinações que existem nas duas tabelas
+> Cada linha do resultado combina um analista com um incidente sob sua responsabilidade. Como é INNER JOIN, analistas que não têm nenhum incidente atribuído não aparecem no resultado só entram combinações que existem nas duas tabelas
 
 ## Consulta INNER JOIN 2
 
@@ -218,7 +218,7 @@ ORDER BY a.nome;
 
 **Explique o resultado:**
 
-> Como o RIGHT JOIN mantém todos os registros da tabela à direita (analistas), todo analista cadastrado aparece no resultado, mesmo que não tenha nenhum incidente sob sua responsabilidade — nesse caso, as colunas incidente e status aparecem como NULL. É o mesmo efeito de um LEFT JOIN com as tabelas invertidas na cláusula FROM.
+> Como o RIGHT JOIN mantém todos os registros da tabela à direita (analistas), todo analista cadastrado aparece no resultado, mesmo que não tenha nenhum incidente sob sua responsabilidade nesse caso, as colunas incidente e status aparecem como NULL. É o mesmo efeito de um LEFT JOIN com as tabelas invertidas na cláusula FROM.
 
 ---
 
@@ -411,7 +411,7 @@ ORDER BY incidentes_encerrados DESC;
 
 **Resultado obtido:**
 
-> Dos 5 incidentes cadastrados, apenas 1 está com status = 'ENCERRADO' (o incidente do servidor de banco de dados), e ele está sob responsabilidade da analista Beatriz Lima. Os demais analistas não aparecem no resultado porque, com INNER JOIN, só entram combinações onde existe correspondência — e nenhum deles tem incidente com esse status específico. Isso confirma que o WHERE i.status = 'ENCERRADO' está funcionando corretamente e que o GROUP BY está calculando a contagem por analista, não pela tabela inteira.
+> Dos 5 incidentes cadastrados, apenas 1 está com status = 'ENCERRADO' (o incidente do servidor de banco de dados), e ele está sob responsabilidade da analista Beatriz Lima. Os demais analistas não aparecem no resultado porque, com INNER JOIN, só entram combinações onde existe correspondência e nenhum deles tem incidente com esse status específico. Isso confirma que o WHERE i.status = 'ENCERRADO' está funcionando corretamente e que o GROUP BY está calculando a contagem por analista, não pela tabela inteira.
 
 A consulta retornou uma única linha:
 
