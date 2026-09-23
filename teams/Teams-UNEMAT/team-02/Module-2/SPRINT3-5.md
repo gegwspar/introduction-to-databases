@@ -29,12 +29,12 @@ O aluno deverá compreender que uma `VIEW` representa uma consulta armazenada qu
 
 **Nome completo:**
 
-> Escreva aqui.
+> Geovanna Gaspar Ribeiro
 
 **Banco utilizado:**
 
 ```text
-
+gerenciamento_incidentes
 ```
 
 ---
@@ -45,10 +45,10 @@ Identifique pelo menos três consultas das Sprints anteriores que são important
 
 | Consulta | Por que é útil? | Será transformada em VIEW? |
 |---|---|---|
-|  |  |  |
-|  |  |  |
-|  |  |  |
-|  |  |  |
+| Incidentes com analista, dispositivo e tipo de ameaça juntos  | Evita repetir 3 JOINs toda vez que alguém precisa ver o panorama completo de um incidente | Sim — vw_incidentes_detalhados |
+| Quantidade de incidentes por analista | Métrica usada com frequência para acompanhar carga de trabalho da equipe | Sim — vw_incidentes_por_analista |
+| Incidentes ainda em aberto/análise | Consulta operacional, usada no dia a dia para saber o que ainda precisa de atenção | Sim — vw_incidentes_em_aberto |
+| Incidentes críticos por tipo de ameaça | Útil para relatórios, mas usada com menos frequência | Não — mantida como consulta avulsa |
 
 ---
 
@@ -84,27 +84,39 @@ INNER JOIN pedido AS p
 **Nome da VIEW:**
 
 ```text
-
+vw_incidentes_detalhados
 ```
 
 **Pergunta que ela representa:**
 
-> Escreva aqui.
+> Para cada incidente, quem é o analista responsável, em qual dispositivo ocorreu e qual o tipo de ameaça envolvido?
 
 **SQL:**
 
 ```sql
--- Cole aqui.
+CREATE VIEW vw_incidentes_detalhados AS
+SELECT
+    i.id_incidente,
+    i.titulo AS incidente,
+    i.severidade,
+    i.status,
+    a.nome AS analista,
+    d.nome_dispositivo AS dispositivo,
+    t.nome_ameaca AS tipo_ameaca
+FROM incidentes i
+JOIN analistas a ON i.id_analista = a.id_analista
+JOIN dispositivos d ON i.id_dispositivo = d.id_dispositivo
+JOIN tipos_ameacas t ON i.id_ameaca = t.id_ameaca;
 ```
 
 **Tabelas utilizadas:**
 
-> Escreva aqui.
+> incidentes, analistas, dispositivos, tipos_ameacas.
 
 **Como consultar essa VIEW?**
 
 ```sql
--- Cole aqui.
+SELECT * FROM vw_incidentes_detalhados;
 ```
 
 ---
@@ -119,15 +131,21 @@ Esta VIEW deverá possuir, quando aplicável:
 
 **Pergunta:**
 
-> Escreva aqui.
-
+> Quantos incidentes cada analista está acompanhando atualmente?
 ```sql
--- Cole aqui.
+CREATE VIEW vw_incidentes_por_analista AS
+SELECT
+    a.id_analista,
+    a.nome AS analista,
+    COUNT(i.id_incidente) AS total_incidentes
+FROM analistas a
+LEFT JOIN incidentes i ON i.id_analista = a.id_analista
+GROUP BY a.id_analista, a.nome;
 ```
 
 **Explique:**
 
-> Escreva aqui.
+> A VIEW junta analistas com incidentes usando LEFT JOIN assim, analistas sem nenhum incidente atribuído também aparecem, com total_incidentes = 0, em vez de simplesmente sumirem do resultado (o que aconteceria com um JOIN comum). O GROUP BY faz o COUNT ser calculado por analista.
 
 ---
 
@@ -150,16 +168,25 @@ pagamentos pendentes
 **Nome da VIEW:**
 
 ```text
-
+vw_incidentes_em_aberto
 ```
 
 ```sql
--- Cole aqui.
+CREATE VIEW vw_incidentes_em_aberto AS
+SELECT
+    i.id_incidente,
+    i.titulo AS incidente,
+    i.severidade,
+    i.status,
+    a.nome AS analista
+FROM incidentes i
+JOIN analistas a ON i.id_analista = a.id_analista
+WHERE i.status IN ('ABERTO', 'EM_ANALISE');
 ```
 
 **Por que essa VIEW é útil?**
 
-> Escreva aqui.
+> Representa exatamente o que um analista ou coordenador do SOC olharia no dia a dia: a lista de incidentes que ainda precisam de atenção (excluindo os já ENCERRADOs ou RESOLVIDOs). Sem a VIEW, essa mesma consulta com JOIN e WHERE teria que ser reescrita toda vez que alguém quisesse esse painel.
 
 ---
 
@@ -183,12 +210,15 @@ WHERE ...;
 **SQL executado:**
 
 ```sql
--- Cole aqui.
+SELECT * FROM vw_incidentes_em_aberto;
+
+SELECT * FROM vw_incidentes_em_aberto
+WHERE severidade = 'ALTA';
 ```
 
 **Resultado observado:**
 
-> Escreva aqui.
+> A primeira consulta traz todos os incidentes com status ABERTO ou EM_ANALISE, já com o nome do analista responsável. A segunda filtra esse mesmo conjunto, mantendo apenas os de severidade ALTA mostrando que a VIEW pode ser consultada e filtrada como se fosse uma tabela comum, mesmo sendo, na verdade, uma consulta armazenada.
 
 ---
 
@@ -207,18 +237,39 @@ Pode ser:
 **VIEW original:**
 
 ```sql
--- Cole aqui.
+CREATE VIEW vw_incidentes_em_aberto AS
+SELECT
+    i.id_incidente,
+    i.titulo AS incidente,
+    i.severidade,
+    i.status,
+    a.nome AS analista
+FROM incidentes i
+JOIN analistas a ON i.id_analista = a.id_analista
+WHERE i.status IN ('ABERTO', 'EM_ANALISE');
 ```
 
 **Nova versão:**
 
 ```sql
-CREATE OR REPLACE VIEW ...
+CREATE OR REPLACE VIEW vw_incidentes_em_aberto AS
+SELECT
+    i.id_incidente,
+    i.titulo AS incidente,
+    i.severidade,
+    i.status,
+    a.nome AS analista,
+    d.nome_dispositivo AS dispositivo,
+    i.data_identificacao
+FROM incidentes i
+JOIN analistas a ON i.id_analista = a.id_analista
+JOIN dispositivos d ON i.id_dispositivo = d.id_dispositivo
+WHERE i.status IN ('ABERTO', 'EM_ANALISE');
 ```
 
 **O que mudou?**
 
-> Escreva aqui.
+> Foram adicionadas duas colunas: dispositivo (via novo JOIN com dispositivos) e data_identificacao, para deixar o painel operacional mais completo, mostrando também onde o incidente ocorreu e há quanto tempo foi identificado. O filtro (WHERE) continuou o mesmo.
 
 ---
 
@@ -240,12 +291,16 @@ DROP VIEW vw_teste;
 **Código utilizado:**
 
 ```sql
--- Cole aqui.
+CREATE VIEW vw_teste AS
+SELECT nome, cargo
+FROM analistas;
+
+DROP VIEW vw_teste;
 ```
 
 **Qual a diferença entre `DROP VIEW` e `DROP TABLE`?**
 
-> Escreva aqui.
+> DROP VIEW remove apenas a consulta armazenada (a definição do SELECT)sem afetar nenhum dado real, já que a VIEW não guarda dados próprios. DROP TABLE remove uma tabela de verdade, apagando permanentemente todos os dados e a estrutura (colunas, chaves, etc.) nela contidos. Remover uma VIEW é uma operação de baixo risco; remover uma tabela é uma operação destrutiva e, em geral, irreversível.
 
 ---
 
@@ -260,9 +315,9 @@ WHERE Table_type = 'VIEW';
 
 **Views encontradas:**
 
-1. 
-2. 
-3. 
+1. vw_incidentes_detalhados
+2. vw_incidentes_por_analista
+3. vw_incidentes_em_aberto
 
 ---
 
@@ -277,18 +332,29 @@ Faça um teste:
 **VIEW testada:**
 
 ```text
-
+vw_incidentes_por_analista
 ```
 
 **Alteração realizada:**
 
 ```sql
--- Cole aqui.
+-- 1) Consultar a VIEW antes da alteração
+SELECT * FROM vw_incidentes_por_analista;
+
+-- 2) Alterar um dado-base: mudar o status de um incidente para ENCERRADO
+--    (a View conta incidentes independente do status, então o teste real
+--    aqui é inserir um novo incidente para o mesmo analista)
+UPDATE incidentes
+SET status = 'ENCERRADO'
+WHERE id_incidente = 4;
+
+-- 3) Consultar a VIEW novamente
+SELECT * FROM vw_incidentes_por_analista;
 ```
 
 **Resultado observado:**
 
-> Escreva aqui.
+> Como a VIEW vw_incidentes_por_analista conta o total de incidentes por analista (sem filtrar por status), o UPDATE de status não muda a contagem, o total continua o mesmo antes e depois. Isso demonstra que a VIEW não guarda um retrato "congelado" dos dados: ela é recalculada a cada consulta, refletindo o estado atual da tabela incidentes no momento em que é lida. (Para observar mudança nesse caso específico, seria necessário inserir um novo incidente para o mesmo analista, o que aumentaria o total_incidentes na consulta seguinte.)
 
 ---
 
@@ -297,7 +363,14 @@ Faça um teste:
 Escolha uma VIEW.
 
 ```sql
--- Cole aqui a definição.
+CREATE VIEW vw_incidentes_por_analista AS
+SELECT
+    a.id_analista,
+    a.nome AS analista,
+    COUNT(i.id_incidente) AS total_incidentes
+FROM analistas a
+LEFT JOIN incidentes i ON i.id_analista = a.id_analista
+GROUP BY a.id_analista, a.nome;
 ```
 
 Explique:
@@ -308,7 +381,11 @@ Explique:
 4. qual problema resolve;
 5. o que muda se os dados das tabelas originais forem alterados.
 
-> Escreva aqui.
+> 1. analistas e incidentes.
+> 2. o relacionamento 1:N entre analistas (PK id_analista) e incidentes (FK id_analista), via LEFT JOIN.
+> 3. id_analista, analista (nome) e total_incidentes (contagem calculada).
+> 4. evita que qualquer pessoa precise reescrever o JOIN + GROUP BY toda vez que quiser saber a carga de incidentes de cada analista, basta consultar SELECT * FROM vw_incidentes_por_analista.
+> 5. como a VIEW não armazena dados, qualquer INSERT, UPDATE ou DELETE feito em analistas ou incidentes é refletido automaticamente na próxima vez que a VIEW for consultada, ela sempre mostra o estado atual das tabelas-base, nunca um valor desatualizado.
 
 ---
 
@@ -384,18 +461,18 @@ COMPREENDER
 
 # 17. Checklist
 
-- [ ] utilizei o banco do projeto;
-- [ ] criei pelo menos 3 Views;
-- [ ] pelo menos uma View usa JOIN;
-- [ ] pelo menos uma View usa agregação ou resumo;
-- [ ] consultei as Views;
-- [ ] utilizei `CREATE OR REPLACE VIEW`;
-- [ ] pratiquei `DROP VIEW`;
-- [ ] validei as Views;
-- [ ] testei mudança em tabela base;
-- [ ] compreendo de onde vêm os dados de cada View;
-- [ ] salvei `SPRINT3-5.md`;
-- [ ] salvei `SPRINT3-5.sql`.
+- [x] utilizei o banco do projeto;
+- [x] criei pelo menos 3 Views;
+- [x] pelo menos uma View usa JOIN;
+- [x] pelo menos uma View usa agregação ou resumo;
+- [x] consultei as Views;
+- [x] utilizei `CREATE OR REPLACE VIEW`;
+- [x] pratiquei `DROP VIEW`;
+- [x] validei as Views;
+- [x] testei mudança em tabela base;
+- [x] compreendo de onde vêm os dados de cada View;
+- [x] salvei `SPRINT3-5.md`;
+- [x] salvei `SPRINT3-5.sql`.
 
 ---
 
