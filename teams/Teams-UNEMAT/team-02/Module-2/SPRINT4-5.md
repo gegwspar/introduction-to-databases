@@ -41,12 +41,12 @@ O objetivo não é apenas criar rotinas que executem, mas entender:
 
 **Nome completo:**
 
-> Escreva aqui.
+> Geovanna Gaspar Ribeiro
 
 **Banco utilizado:**
 
 ```text
-
+gerenciamento_incidentes
 ```
 
 ---
@@ -57,9 +57,10 @@ Defina rotinas úteis ao seu sistema.
 
 | Rotina | Tipo | Entrada | Saída | Objetivo |
 |---|---|---|---|---|
-|  | Procedure |  |  |  |
-|  | Procedure |  |  |  |
-|  | Function |  |  |  |
+| listar_incidentes_por_status | Procedure | p_status VARCHAR(20) | Lista de incidentes | Listar incidentes filtrados por status (ABERTO, EM_ANALISE, etc.) |
+| encerrar_incidente | Procedure | p_id_incidente INT | Mensagem de confirmação | Encerrar um incidente, evitando encerrar um que já esteja encerrado |
+| contar_incidentes_por_severidade | Procedure | p_severidade VARCHAR(20) | p_total INT (OUT) | Contar quantos incidentes existem de determinada severidade |
+| dias_em_aberto | Function | p_id_incidente INT | INT (dias) | Calcular há quantos dias um incidente está em aberto (ou levou para ser resolvido) |
 
 ---
 
@@ -82,7 +83,7 @@ DELIMITER ;
 
 **Explique por que o `DELIMITER` é utilizado:**
 
-> Escreva aqui.
+> Por padrão, o MySQL usa ; para marcar o fim de cada comando. Mas o corpo de uma Procedure ou Function costuma ter vários comandos internos, cada um terminado com ; — se o delimitador continuasse sendo ;, o MySQL entenderia que a criação da rotina terminou no primeiro ; interno, antes do END. Por isso, trocamos temporariamente o delimitador para algo como //, para que o MySQL só considere o bloco CREATE PROCEDURE ... END como um único comando, terminado apenas quando encontrar //. No final, o delimitador é devolvido para ; com DELIMITER ;.
 
 ---
 
@@ -92,29 +93,44 @@ Crie uma Procedure que receba pelo menos um parâmetro.
 
 **Objetivo:**
 
-> Escreva aqui.
+> Listar todos os incidentes que estejam em um determinado status (por exemplo, todos os ABERTO), já mostrando o analista responsável por cada um.
 
 **Parâmetro de entrada:**
 
 ```text
-
+p_status VARCHAR(20) — o status a ser filtrado (ex.: 'ABERTO', 'EM_ANALISE', 'ENCERRADO')
 ```
 
 **SQL:**
 
 ```sql
--- Cole aqui.
+DELIMITER //
+
+CREATE PROCEDURE listar_incidentes_por_status(
+    IN p_status VARCHAR(20)
+)
+BEGIN
+    SELECT i.id_incidente,
+           i.titulo,
+           i.severidade,
+           a.nome AS analista
+    FROM incidentes i
+    JOIN analistas a ON i.id_analista = a.id_analista
+    WHERE i.status = p_status;
+END //
+
+DELIMITER ;
 ```
 
 **Execução:**
 
 ```sql
-CALL ...
+CALL listar_incidentes_por_status('ABERTO');
 ```
 
 **Resultado esperado:**
 
-> Escreva aqui.
+> Uma lista com todos os incidentes cujo status seja exatamente 'ABERTO', mostrando título, severidade e o nome do analista responsável. Se nenhum incidente tiver esse status, a lista vem vazia (sem erro).
 
 ---
 
@@ -135,16 +151,40 @@ listar produtos de determinada categoria
 
 **Objetivo:**
 
-> Escreva aqui.
+> Encerrar um incidente (mudar o status para 'ENCERRADO' e registrar a data de encerramento), mas evitando encerrar de novo um incidente que já esteja encerrado.
 
 ```sql
--- Cole aqui.
+DELIMITER //
+
+CREATE PROCEDURE encerrar_incidente(
+    IN p_id_incidente INT
+)
+BEGIN
+    DECLARE v_status VARCHAR(20);
+
+    SELECT status INTO v_status
+    FROM incidentes
+    WHERE id_incidente = p_id_incidente;
+
+    IF v_status = 'ENCERRADO' THEN
+        SELECT CONCAT('O incidente ', p_id_incidente, ' já está encerrado.') AS mensagem;
+    ELSE
+        UPDATE incidentes
+        SET status = 'ENCERRADO',
+            data_encerramento = NOW()
+        WHERE id_incidente = p_id_incidente;
+
+        SELECT CONCAT('Incidente ', p_id_incidente, ' encerrado com sucesso.') AS mensagem;
+    END IF;
+END //
+
+DELIMITER ;
 ```
 
 **Execução:**
 
 ```sql
-CALL ...
+CALL encerrar_incidente(2);
 ```
 
 ---
@@ -175,7 +215,19 @@ SELECT @total;
 **SQL do seu projeto:**
 
 ```sql
--- Cole aqui.
+DELIMITER //
+
+CREATE PROCEDURE contar_incidentes_por_severidade(
+    IN p_severidade VARCHAR(20),
+    OUT p_total INT
+)
+BEGIN
+    SELECT COUNT(*) INTO p_total
+    FROM incidentes
+    WHERE severidade = p_severidade;
+END //
+
+DELIMITER ;
 ```
 
 Caso não seja aplicável, justifique:
@@ -203,30 +255,49 @@ END;
 
 **Objetivo:**
 
-> Escreva aqui.
+> Calcular há quantos dias um incidente está em aberto ou, se ele já foi encerrado, quantos dias ele levou entre a identificação e o encerramento.
 
 **Parâmetro recebido:**
 
 ```text
-
+p_id_incidente INT — o id do incidente
 ```
 
 **Valor retornado:**
 
 ```text
-
+INT — quantidade de dias
 ```
 
 **SQL:**
 
 ```sql
--- Cole aqui.
+DELIMITER //
+
+CREATE FUNCTION dias_em_aberto(p_id_incidente INT)
+RETURNS INT
+DETERMINISTIC
+BEGIN
+    DECLARE v_dias INT;
+
+    SELECT TIMESTAMPDIFF(
+               DAY,
+               data_identificacao,
+               IFNULL(data_encerramento, NOW())
+           ) INTO v_dias
+    FROM incidentes
+    WHERE id_incidente = p_id_incidente;
+
+    RETURN v_dias;
+END //
+
+DELIMITER ;
 ```
 
 **Exemplo de uso:**
 
 ```sql
-SELECT nome_funcao(...);
+SELECT dias_em_aberto(2);
 ```
 
 ---
@@ -247,10 +318,19 @@ END IF;
 
 **Regra de negócio implementada:**
 
-> Escreva aqui.
+> Na Procedure encerrar_incidente (seção 5): antes de encerrar um incidente, a rotina verifica se ele já está com status = 'ENCERRADO'. Se estiver, ela apenas avisa que o incidente já foi encerrado, sem fazer nenhuma alteração (evitando sobrescrever, por exemplo, uma data_encerramento que já existia). Só quando o status é diferente de 'ENCERRADO' é que o UPDATE realmente acontece.
 
 ```sql
--- Cole aqui.
+IF v_status = 'ENCERRADO' THEN
+    SELECT CONCAT('O incidente ', p_id_incidente, ' já está encerrado.') AS mensagem;
+ELSE
+    UPDATE incidentes
+    SET status = 'ENCERRADO',
+        data_encerramento = NOW()
+    WHERE id_incidente = p_id_incidente;
+
+    SELECT CONCAT('Incidente ', p_id_incidente, ' encerrado com sucesso.') AS mensagem;
+END IF;
 ```
 
 ---
@@ -261,15 +341,15 @@ Explique com suas palavras.
 
 ## Procedure
 
-> Escreva aqui.
+> Uma Procedure é uma rotina que executa um conjunto de comandos (pode incluir SELECT, INSERT, UPDATE, DELETE, estruturas de controle etc.) e é chamada com CALL. Ela não é obrigada a devolver um valor único, pode retornar um conjunto de linhas (como um SELECT normal), não retornar nada, ou devolver valores através de parâmetros OUT.
 
 ## Function
 
-> Escreva aqui.
+> Uma Function é uma rotina que sempre devolve um único valor, através de RETURN, e pode ser usada diretamente dentro de uma expressão SQL por exemplo, dentro de um SELECT, WHERE ou ORDER BY como se fosse uma coluna calculada.
 
 ## Quando você utilizaria cada uma no seu projeto?
 
-> Escreva aqui.
+> Utilizo o Procedure quando a operação envolve uma ação mais completa sobre o banco (como encerrar um incidente, alterando dados) ou quando quero retornar uma lista de linhas, algo que uma Function não pode fazer. Já o Function quando preciso de um cálculo pontual e reaproveitável, que eu queira embutir dentro de outras consultas, como calcular dias_em_aberto de cada incidente numa lista inteira, sem precisar chamar uma rotina separada para cada um.
 
 ---
 
@@ -280,35 +360,35 @@ Para cada rotina, execute pelo menos dois testes com parâmetros diferentes.
 ## Procedure 1
 
 ```sql
-CALL ...;
-CALL ...;
+CALL listar_incidentes_por_status('ABERTO');
+CALL listar_incidentes_por_status('ENCERRADO');
 ```
 
 **Resultados:**
 
-> Escreva aqui.
+> A chamada com 'ABERTO' retornou 2 incidentes nesse status, enquanto a chamada com 'ENCERRADO' retornou 3 incidentes, já refletindo os encerramentos realizados nas Sprints anteriores e durante os testes desta Sprint. Isso confirma que o parâmetro p_status controla corretamente o filtro aplicado pela Procedure.
 
 ## Procedure 2
 
 ```sql
-CALL ...;
-CALL ...;
+CALL encerrar_incidente(2);
+CALL encerrar_incidente(2);
 ```
 
 **Resultados:**
 
-> Escreva aqui.
+> Nas duas execuções, a Procedure retornou a mensagem "O incidente 2 já está encerrado.", pois o incidente 2 já havia sido encerrado em um teste anterior a esta chamada. O comportamento confirma o funcionamento do IF/ELSE: como v_status já era 'ENCERRADO', o UPDATE não foi executado em nenhuma das duas chamadas, evitando sobrescrever indevidamente a data_encerramento já registrada.
 
 ## Function
 
 ```sql
-SELECT ...;
-SELECT ...;
+SELECT dias_em_aberto(2);
+SELECT dias_em_aberto(5);
 ```
 
 **Resultados:**
 
-> Escreva aqui.
+> As duas chamadas retornaram 0. Isso ocorre porque tanto a identificação quanto o encerramento dos incidentes 2 e 5 foram registrados no mesmo dia em que os testes foram executados, como TIMESTAMPDIFF(DAY, ...) conta apenas dias de calendário completos, a diferença de poucas horas entre os dois eventos resulta em zero dias completos. O resultado é matematicamente correto e evidencia uma limitação natural da granularidade em dias para incidentes resolvidos no mesmo dia em que foram abertos.
 
 ---
 
@@ -325,11 +405,35 @@ Escolha uma rotina e prepare-se para:
 **Rotina escolhida:**
 
 ```text
-
+encerrar_incidente
 ```
 
 ```sql
--- Cole aqui.
+DELIMITER //
+
+CREATE PROCEDURE encerrar_incidente(
+    IN p_id_incidente INT
+)
+BEGIN
+    DECLARE v_status VARCHAR(20);
+
+    SELECT status INTO v_status
+    FROM incidentes
+    WHERE id_incidente = p_id_incidente;
+
+    IF v_status = 'ENCERRADO' THEN
+        SELECT CONCAT('O incidente ', p_id_incidente, ' já está encerrado.') AS mensagem;
+    ELSE
+        UPDATE incidentes
+        SET status = 'ENCERRADO',
+            data_encerramento = NOW()
+        WHERE id_incidente = p_id_incidente;
+
+        SELECT CONCAT('Incidente ', p_id_incidente, ' encerrado com sucesso.') AS mensagem;
+    END IF;
+END //
+
+DELIMITER ;
 ```
 
 ---
@@ -407,18 +511,18 @@ COMPREENDER
 
 # 16. Checklist
 
-- [ ] utilizei o banco do projeto;
-- [ ] compreendi o uso do `DELIMITER`;
-- [ ] criei pelo menos 2 Procedures;
-- [ ] criei uma Function;
-- [ ] utilizei parâmetro `IN`;
-- [ ] utilizei `OUT` quando aplicável;
-- [ ] utilizei `IF/ELSE`;
-- [ ] testei cada rotina;
-- [ ] executei parâmetros diferentes;
-- [ ] consigo explicar todas as rotinas;
-- [ ] salvei `SPRINT4-5.md`;
-- [ ] salvei `SPRINT4-5.sql`.
+- [x] utilizei o banco do projeto;
+- [x] compreendi o uso do `DELIMITER`;
+- [x] criei pelo menos 2 Procedures;
+- [x] criei uma Function;
+- [x] utilizei parâmetro `IN`;
+- [x] utilizei `OUT` quando aplicável;
+- [x] utilizei `IF/ELSE`;
+- [x] testei cada rotina;
+- [x] executei parâmetros diferentes;
+- [x] consigo explicar todas as rotinas;
+- [x] salvei `SPRINT4-5.md`;
+- [x] salvei `SPRINT4-5.sql`.
 
 ---
 
